@@ -3,3 +3,8 @@ node_modules
 firebase.json
 servicekey.json
 tempUploads/
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
