@@ -7,6 +7,7 @@ connect()
 // require("./passport")
 const authRoutes=require('./routes/auth.routes')
 const fileRoutes=require('./routes/file.routes')
+const promptRoutes=require('./routes/prompt.routes')
 const app=express()
 
 app.use(cors())
@@ -16,6 +17,7 @@ app.use(passport.initialize())
 
 app.use('/auth',authRoutes)
 app.use("/files", fileRoutes);
+app.use('/prompt',promptRoutes)
 app.listen(5000,()=>{
     console.log("Server Running on Port 5000")
 })
