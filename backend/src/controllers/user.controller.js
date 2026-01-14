@@ -8,15 +8,11 @@ const { generateOTP } = require('../utils/misc');
 async function register(req, res) {
     try {
         const { name, email, password } = req.body;
-
-
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: "Email already exists" });
         }
-
         await OTP.deleteMany({ email, purpose: "REGISTER", used: false });
-
         const otp = generateOTP();
 
         await OTP.create({
@@ -40,7 +36,6 @@ async function register(req, res) {
         res.status(500).json({ error: err.message });
     }
 }
-
 async function verifyRegisterOTP(req, res) {
     try {
         const { email, otp } = req.body;
