@@ -1,26 +1,25 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, validator
-from typing import List, Optional, Dict, Any
-import spacy
-from textblob import TextBlob
-from functools import lru_cache
+from typing import Dict, Any, List, Optional
 import logging
 import re
 from collections import defaultdict
 import requests
 from io import BytesIO
 from pypdf import PdfReader
-from langdetect import detect, LangDetectException
-
+import spacy
+from textblob import TextBlob
+from functools import lru_cache
+from agents.copywriting import generate_copy
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Text Feature Extractor",
-    description="Advanced text analysis with context-aware feature extraction",
-    version="3.0.0"
+    title="Marketing Campaign Orchestrator & Text Feature Extractor",
+    description="Orchestrates marketing campaigns and provides advanced text analysis with context-aware feature extraction",
+    version="4.0.0"
 )
 
 # ---------------- LAZY LOADING ---------------- #
@@ -89,6 +88,29 @@ TONE_KEYWORDS = {
 
 # ---------------- MODELS ---------------- #
 
+class CampaignRequest(BaseModel):
+    strategy: Dict[str, Any]
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "strategy": {
+                    "product": "EcoBottle - Reusable Water Bottle",
+                    "audience": "environmentally conscious millennials",
+                    "goal": "increase brand awareness",
+                    "tone": "friendly and inspiring",
+                    "platforms": ["Instagram", "Facebook", "Blog"],
+                    "stylistics": "focus on sustainability"
+                }
+            }
+        }
+
+class CampaignResponse(BaseModel):
+    status: str
+    strategy: Dict[str, Any]
+    copywriting: Dict[str, Any]
+    # Future: add visual, market, media, outreach
+
 class TextInput(BaseModel):
     text: str = Field(..., min_length=1, max_length=10000)
     
@@ -114,6 +136,9 @@ class SimpleExtractionResponse(BaseModel):
     goals: List[str]
     tone: Optional[str]
     platform: Optional[str]
+
+class PdfUrlInput(BaseModel):
+    pdf_url: str = Field(..., min_length=10)
 
 # ---------------- ADVANCED EXTRACTORS ---------------- #
 
@@ -438,9 +463,54 @@ class AdvancedFeatureExtractor:
 async def root():
     return {
         "status": "healthy",
-        "service": "Advanced Text Feature Extractor API",
-        "version": "3.0.0"
+        "service": "Marketing Campaign Orchestrator & Advanced Text Feature Extractor API",
+        "version": "4.0.0",
+        "available_agents": ["copywriting"],
+        "features": ["text_extraction", "campaign_generation"]
     }
+
+@app.post("/generate-campaign", response_model=CampaignResponse)
+async def generate_campaign(request: CampaignRequest):
+    """
+    Orchestrate campaign generation by calling all agents
+    """
+    try:
+        strategy = request.strategy
+        
+        logger.info(f"Generating campaign for product: {strategy.get('product', 'Unknown')}")
+        
+        logger.info("Calling copywriting agent...")
+        copywriting_result = generate_copy(strategy)
+        logger.info("Copywriting agent completed")
+        
+        # Future: Call other agents in parallel
+        # visual_result = generate_visuals(strategy)
+        # market_result = analyze_market(strategy)
+        # media_result = plan_media(strategy)
+        # outreach_result = plan_outreach(strategy)
+        
+        return CampaignResponse(
+            status="success",
+            strategy=strategy,
+            copywriting=copywriting_result
+        )
+        
+    except Exception as e:
+        logger.error(f"Campaign generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Campaign generation failed: {str(e)}")
+
+@app.post("/generate-copy")
+async def generate_copy_only(request: CampaignRequest):
+    """
+    Generate only copywriting content (bypass orchestrator)
+    """
+    try:
+        logger.info("Generating copy only...")
+        result = generate_copy(request.strategy)
+        return {"status": "success", "data": result}
+    except Exception as e:
+        logger.error(f"Copywriting error: {e}")
+        raise HTTPException(status_code=500, detail=f"Copywriting failed: {str(e)}")
 
 @app.post("/extract", response_model=ExtractionResponse)
 async def extract_features(data: TextInput):
@@ -496,7 +566,6 @@ async def extract_features_batch(texts: List[TextInput]):
     
     return {"results": results, "total": len(results)}
 
-
 def filter_output(adv: ExtractionResponse) -> SimpleExtractionResponse:
     goal = adv.goals.get("primary")
 
@@ -520,15 +589,16 @@ async def extract_simple(data: TextInput):
     advanced = await extract_features(data)
     return filter_output(advanced)
 
-@app.on_event("startup")
-async def startup_event():
-    logger.info("Starting Advanced Text Feature Extractor API...")
-    try:
-        get_nlp()
-        logger.info("API ready")
-    except Exception as e:
-        logger.error(f"Failed to load models: {e}")
+@app.post("/extract/pdf-url", response_model=SimpleExtractionResponse)
+async def extract_from_pdf_url(data: PdfUrlInput):
+    """
+    Extract features from a PDF URL.
+    PDF → text → same NLP pipeline
+    """
+    text = pdf_url_to_text(data.pdf_url)
 
+    advanced = await extract_features(TextInput(text=text))
+    return filter_output(advanced)
 
 def pdf_url_to_text(pdf_url: str) -> str:
     try:
@@ -556,22 +626,15 @@ def pdf_url_to_text(pdf_url: str) -> str:
         logger.error(f"PDF parsing error: {e}")
         raise HTTPException(status_code=400, detail="Failed to parse PDF")
 
-class PdfUrlInput(BaseModel):
-    pdf_url: str = Field(..., min_length=10)
-
-
-@app.post("/extract/pdf-url", response_model=SimpleExtractionResponse)
-async def extract_from_pdf_url(data: PdfUrlInput):
-    """
-    Extract features from a PDF URL.
-    PDF → text → same NLP pipeline
-    """
-    text = pdf_url_to_text(data.pdf_url)
-
-    advanced = await extract_features(TextInput(text=text))
-    return filter_output(advanced)
-
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Starting Marketing Campaign Orchestrator & Advanced Text Feature Extractor API...")
+    try:
+        get_nlp()
+        logger.info("API ready")
+    except Exception as e:
+        logger.error(f"Failed to load models: {e}")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8001)
