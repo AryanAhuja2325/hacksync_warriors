@@ -11,6 +11,10 @@ import spacy
 from textblob import TextBlob
 from functools import lru_cache
 from agents.copywriting import generate_copy
+from agents.strategyParser import StrategyParser
+from agents.visualAgent import VisualAgent
+from agents.mediaAgent import generate_media_plan
+from influencer_discovery import discover_influencers, generate_outreach_message
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -109,6 +113,126 @@ class CampaignResponse(BaseModel):
     status: str
     strategy: Dict[str, Any]
     copywriting: Dict[str, Any]
+
+
+class ParseStrategyRequest(BaseModel):
+    input_data: str
+    input_type: str = "text"  # "text" or "pdf"
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "input_data": "We are Swasya, a sustainable jeans brand...",
+                "input_type": "text"
+            }
+        }
+
+
+class ParseStrategyResponse(BaseModel):
+    status: str
+    strategy: Dict[str, Any]
+    metadata: Dict[str, Any]
+
+
+class VisualMoodBoardRequest(BaseModel):
+    strategy: Dict[str, Any]
+    num_variations: int = 4
+    image_size: str = "1024x1024"
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "strategy": {
+                    "product": "Swasya",
+                    "audience": "college students",
+                    "tone": "energetic, fun",
+                    "domain": "fashion"
+                },
+                "num_variations": 4
+            }
+        }
+
+
+class VisualMoodBoardResponse(BaseModel):
+    status: str
+    product: str
+    visual_theme: str
+    color_palette: List[str]
+    tiles: List[Dict[str, Any]]
+    total_generated: int
+
+
+class MediaPlanRequest(BaseModel):
+    strategy: Dict[str, Any]
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "strategy": {
+                    "product": "Swasya",
+                    "audience": "college students",
+                    "domain": "fashion"
+                }
+            }
+        }
+
+
+class MediaPlanResponse(BaseModel):
+    status: str
+    platforms: List[Dict[str, Any]]
+    posting_schedule: Dict[str, Any]
+    content_mix: Dict[str, Any]
+    metadata: Dict[str, Any]
+
+
+class InfluencerDiscoveryRequest(BaseModel):
+    strategy: Dict[str, Any]
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "strategy": {
+                    "product": "Swasya",
+                    "audience": "college students",
+                    "platforms": ["Instagram", "YouTube"],
+                    "stylistics": "sustainability",
+                    "location": "India"
+                }
+            }
+        }
+
+
+class InfluencerDiscoveryResponse(BaseModel):
+    status: str
+    count: int
+    influencers: List[Dict[str, Any]]
+    metadata: Dict[str, Any]
+
+
+class OutreachRequest(BaseModel):
+    influencer: Dict[str, Any]
+    campaign_details: Dict[str, Any]
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "influencer": {
+                    "name": "FashionInfluencer",
+                    "platform": "Instagram",
+                    "niche": "Sustainable Fashion"
+                },
+                "campaign_details": {
+                    "product": "Swasya",
+                    "tone": "friendly"
+                }
+            }
+        }
+
+
+class OutreachResponse(BaseModel):
+    status: str
+    message: str
+    subject: Optional[str] = None
     # Future: add visual, market, media, outreach
 
 class TextInput(BaseModel):
@@ -464,10 +588,44 @@ async def root():
     return {
         "status": "healthy",
         "service": "Marketing Campaign Orchestrator & Advanced Text Feature Extractor API",
-        "version": "4.0.0",
-        "available_agents": ["copywriting"],
-        "features": ["text_extraction", "campaign_generation"]
+        "version": "5.0.0",
+        "available_agents": ["copywriting", "strategy_parser", "visual", "media", "influencer"],
+        "features": ["text_extraction", "campaign_generation", "mood_board", "media_planning", "influencer_discovery"],
+        "endpoints": {
+            "parse_strategy": "/parse-strategy",
+            "generate_campaign": "/generate-campaign",
+            "generate_copy": "/generate-copy",
+            "generate_mood_board": "/generate-mood-board",
+            "generate_media_plan": "/generate-media-plan",
+            "discover_influencers": "/discover-influencers",
+            "generate_outreach": "/generate-outreach"
+        }
     }
+
+
+@app.post("/parse-strategy", response_model=ParseStrategyResponse)
+async def parse_strategy(request: ParseStrategyRequest):
+    """
+    Parse campaign brief from text or PDF into structured strategy
+    """
+    try:
+        logger.info(f"Parsing strategy from {request.input_type} input")
+        
+        parser = StrategyParser()
+        result = parser.parse_strategy(
+            input_data=request.input_data,
+            input_type=request.input_type
+        )
+        
+        return ParseStrategyResponse(
+            status="success",
+            strategy=result.get("strategy", {}),
+            metadata=result.get("metadata", {})
+        )
+        
+    except Exception as e:
+        logger.error(f"Strategy parsing error: {e}")
+        raise HTTPException(status_code=500, detail=f"Strategy parsing failed: {str(e)}")
 
 @app.post("/generate-campaign", response_model=CampaignResponse)
 async def generate_campaign(request: CampaignRequest):
@@ -511,6 +669,104 @@ async def generate_copy_only(request: CampaignRequest):
     except Exception as e:
         logger.error(f"Copywriting error: {e}")
         raise HTTPException(status_code=500, detail=f"Copywriting failed: {str(e)}")
+
+
+@app.post("/generate-mood-board", response_model=VisualMoodBoardResponse)
+async def generate_mood_board(request: VisualMoodBoardRequest):
+    """
+    Generate visual mood board from campaign strategy
+    """
+    try:
+        logger.info(f"Generating mood board for: {request.strategy.get('product', 'Unknown')}")
+        
+        visual_agent = VisualAgent()
+        mood_board = visual_agent.generate_mood_board(
+            strategy=request.strategy,
+            num_variations=request.num_variations,
+            image_size=request.image_size
+        )
+        
+        return VisualMoodBoardResponse(
+            status=mood_board.get("status", "success"),
+            product=mood_board.get("product", ""),
+            visual_theme=mood_board.get("visual_theme", ""),
+            color_palette=mood_board.get("color_palette", []),
+            tiles=mood_board.get("tiles", []),
+            total_generated=mood_board.get("total_generated", 0)
+        )
+        
+    except Exception as e:
+        logger.error(f"Mood board generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Mood board generation failed: {str(e)}")
+
+
+@app.post("/generate-media-plan", response_model=MediaPlanResponse)
+async def generate_media_plan_endpoint(request: MediaPlanRequest):
+    """
+    Generate media planning strategy from campaign strategy
+    """
+    try:
+        logger.info(f"Generating media plan for: {request.strategy.get('product', 'Unknown')}")
+        
+        media_plan = generate_media_plan(request.strategy)
+        
+        return MediaPlanResponse(
+            status="success",
+            platforms=media_plan.get("platforms", []),
+            posting_schedule=media_plan.get("posting_schedule", {}),
+            content_mix=media_plan.get("content_mix", {}),
+            metadata=media_plan.get("metadata", {})
+        )
+        
+    except Exception as e:
+        logger.error(f"Media plan generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Media plan generation failed: {str(e)}")
+
+
+@app.post("/discover-influencers", response_model=InfluencerDiscoveryResponse)
+async def discover_influencers_endpoint(request: InfluencerDiscoveryRequest):
+    """
+    AI-powered influencer discovery based on campaign strategy
+    """
+    try:
+        logger.info(f"Discovering influencers for: {request.strategy.get('product', 'Unknown')}")
+        
+        result = discover_influencers(request.strategy)
+        
+        return InfluencerDiscoveryResponse(
+            status="success",
+            count=len(result.get("influencers", [])),
+            influencers=result.get("influencers", []),
+            metadata=result.get("metadata", {})
+        )
+        
+    except Exception as e:
+        logger.error(f"Influencer discovery error: {e}")
+        raise HTTPException(status_code=500, detail=f"Influencer discovery failed: {str(e)}")
+
+
+@app.post("/generate-outreach", response_model=OutreachResponse)
+async def generate_outreach_endpoint(request: OutreachRequest):
+    """
+    Generate personalized outreach message for influencer
+    """
+    try:
+        logger.info(f"Generating outreach for: {request.influencer.get('name', 'Unknown')}")
+        
+        message = generate_outreach_message(
+            influencer=request.influencer,
+            campaign_details=request.campaign_details
+        )
+        
+        return OutreachResponse(
+            status="success",
+            message=message.get("message", ""),
+            subject=message.get("subject")
+        )
+        
+    except Exception as e:
+        logger.error(f"Outreach generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Outreach generation failed: {str(e)}")
 
 @app.post("/extract", response_model=ExtractionResponse)
 async def extract_features(data: TextInput):

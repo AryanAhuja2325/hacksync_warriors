@@ -1,6 +1,6 @@
 """
 Visual Agent - Mood Board Generator
-Generates visual mood boards from campaign strategies using Pollinations API
+Generates visual mood boards from campaign strategies using Gemini API
 """
 
 import os
@@ -25,46 +25,34 @@ class VisualAgent:
     
     Flow:
     1. Campaign Strategy → Visual Prompts (LLM)
-    2. Visual Prompts → Image Generation (Pollinations API)
+    2. Visual Prompts → Image Generation (Gemini API)
     3. Images → Structured Mood Board
     """
     
     def __init__(self):
-        self.pollinations_key = os.getenv("POLLINATIONS_API_KEY")
         mistral_key = os.getenv("MISTRAL_API_KEY")
         self.gemini_key = os.getenv("GEMINI_API_KEY")
         
-        if not self.pollinations_key:
-            raise ValueError("POLLINATIONS_API_KEY not found in .env")
         if not mistral_key:
             raise ValueError("MISTRAL_API_KEY not found in .env")
+        if not self.gemini_key:
+            raise ValueError("GEMINI_API_KEY not found in .env")
         
         self.mistral_client = Mistral(api_key=mistral_key)
         self.mistral_model = "mistral-large-latest"
         
-        # Pollinations endpoint
-        self.pollinations_endpoint = "https://image.pollinations.ai/prompt"
-        
-        # Gemini setup (if key available)
-        if self.gemini_key:
-            try:
-                from google import genai
-                from google.genai import types
+        # Gemini setup
+        try:
+            from google import genai
+            from google.genai import types
+            
+            # Initialize standard Gemini client
+            self.genai_client = genai.Client(api_key=self.gemini_key)
+            self.genai_types = types
+            logger.info("✓ Gemini client initialized (image generation capable)")
                 
-                # Initialize standard Gemini client (no Vertex AI needed)
-                self.genai_client = genai.Client(api_key=self.gemini_key)
-                self.genai_types = types
-                logger.info("✓ Gemini client initialized (image generation capable)")
-                    
-            except Exception as e:
-                logger.warning(f"Gemini setup failed: {e}")
-                self.genai_client = None
-                self.genai_types = None
-        else:
-            logger.warning("No GEMINI_API_KEY found - fallback disabled")
-            self.genai_client = None
-            self.genai_types = None
-            self.gcp_project_id = None
+        except Exception as e:
+            raise ValueError(f"Gemini setup failed: {e}")
         
         # Cache for generated images (prevent regeneration)
         self.image_cache = {}
@@ -207,21 +195,34 @@ class VisualAgent:
         product = strategy.get("product", "")
         audience = strategy.get("audience", "")
         tone = strategy.get("tone", "")
-        domain = strategy.get("stylistics", strategy.get("domain", ""))
+        domain = strategy.get("domain", "")
+        stylistics = strategy.get("stylistics", "")
+        goal = strategy.get("goal", "")
         
-        prompt = f"""You are a visual creative director. Convert this campaign strategy into visual design language.
+        prompt = f"""You are a visual creative director. Convert this campaign strategy into visual design language for IMAGE GENERATION.
 
 CAMPAIGN STRATEGY:
-- Product: {product}
+- Product/Brand: {product}
+- Domain/Category: {domain}
 - Target Audience: {audience}
 - Tone: {tone}
-- Domain/Style: {domain}
+- Style: {stylistics}
+- Goal: {goal}
+
+CRITICAL INSTRUCTIONS FOR "product" FIELD:
+1. Use the DOMAIN to determine the actual product category
+2. If domain is "fashion", the product is CLOTHING/APPAREL (e.g., "jeans", "denim clothing", "fashion apparel")
+3. If domain is "food", the product is FOOD ITEMS
+4. If domain is "tech", the product is ELECTRONIC DEVICES
+5. The product field MUST describe the PHYSICAL ITEM to photograph, NOT the brand name
+6. Example: If brand is "Nike" and domain is "fashion", product = "athletic sneakers"
+7. Example: If brand is "Swasya" and domain is "fashion", product = "sustainable jeans"
 
 EXTRACT VISUAL DESCRIPTORS in JSON format:
 {{
-  "product": "CONCRETE product description (e.g., 'reusable water bottle' NOT 'EcoBottle', 'smartphone' NOT 'iPhone 15')",
+  "product": "PHYSICAL product type based on domain (e.g., 'sustainable jeans', 'eco-friendly denim', 'fashion apparel')",
   "audience": "target demographic (e.g., 'college students', 'young professionals')",
-  "theme": "one-sentence visual theme",
+  "theme": "one-sentence visual theme combining product and brand values",
   "colors": ["color1", "color2", "color3"],
   "lighting": "lighting style (natural/studio/dramatic/soft)",
   "photography_style": "style (candid/editorial/lifestyle/product)",
@@ -229,8 +230,6 @@ EXTRACT VISUAL DESCRIPTORS in JSON format:
   "cultural_context": "cultural relevance (if audience is specific region)",
   "composition": "framing preference (close-up/wide/overhead/portrait)"
 }}
-
-CRITICAL: The "product" field must be the ACTUAL PHYSICAL OBJECT TYPE (e.g., "water bottle", "laptop", "sneakers"), NOT a brand name or marketing description.
 
 Return ONLY valid JSON, no additional text."""
         
@@ -252,19 +251,30 @@ Return ONLY valid JSON, no additional text."""
                 json_str = response_text.strip()
             
             descriptors = json.loads(json_str)
-            logger.info(f"Visual theme: {descriptors.get('theme', 'N/A')}")
+            logger.info(f"Visual descriptors extracted - Product: {descriptors.get('product')}, Theme: {descriptors.get('theme', 'N/A')}")
             
             return descriptors
         
         except Exception as e:
             logger.error(f"Error generating visual descriptors: {e}")
-            # Fallback to basic descriptors
+            # Fallback: Use domain to infer product type
+            product_type = product
+            if domain:
+                if domain.lower() in ["fashion", "apparel", "clothing"]:
+                    product_type = "sustainable jeans and denim clothing"
+                elif domain.lower() in ["food", "beverage"]:
+                    product_type = "food products"
+                elif domain.lower() in ["tech", "technology"]:
+                    product_type = "tech products"
+            
             return {
-                "theme": f"{product} for {audience}",
+                "product": product_type,
+                "audience": audience,
+                "theme": f"{product_type} for {audience}",
                 "colors": ["vibrant", "modern"],
                 "lighting": "natural",
                 "photography_style": "lifestyle",
-                "emotional_tone": tone,
+                "tone": tone,
                 "cultural_context": "universal",
                 "composition": "balanced"
             }
@@ -355,121 +365,34 @@ Return ONLY valid JSON, no additional text."""
         reference_image_path: str = None
     ) -> Optional[Dict[str, Any]]:
         """
-        Generate a single mood board tile using Pollinations API or Gemini.
+        Generate a single mood board tile using Gemini.
         
-        If reference_image_path is provided, tries Gemini img2img first, then falls back to Pollinations.
-        Otherwise uses Pollinations directly.
+        If reference_image_path is provided, uses image-to-image.
+        Otherwise uses text-to-image.
         """
-        # If reference image provided, try Gemini image-to-image first
-        if reference_image_path:
-            gemini_tile = self._gemini_image_to_image(prompt, mood, style, width, height, tile_id, reference_image_path)
-            if gemini_tile:
-                return gemini_tile
-            else:
-                logger.warning("Gemini img2img failed, falling back to Pollinations text-to-image")
-                # Continue to Pollinations below
-        
         # Check cache
-        cache_key = f"{prompt}_{width}x{height}"
+        cache_key = f"{prompt}_{width}x{height}_{reference_image_path or 'text2img'}"
         if cache_key in self.image_cache:
             logger.info("Using cached image")
             return self.image_cache[cache_key]
         
-        # Encode prompt for URL
-        encoded_prompt = requests.utils.quote(prompt)
-        url = f"{self.pollinations_endpoint}/{encoded_prompt}"
+        # Use Gemini for generation
+        if reference_image_path:
+            # Image-to-image generation
+            tile = self._gemini_image_to_image(prompt, mood, style, width, height, tile_id, reference_image_path)
+        else:
+            # Text-to-image generation
+            tile = self._gemini_text_to_image(prompt, mood, style, width, height, tile_id)
         
-        # Query parameters
-        params = {
-            "width": width,
-            "height": height,
-            "model": "flux",
-            "nologo": "true",
-            "enhance": "false"
-        }
+        if tile:
+            # Cache it
+            self.image_cache[cache_key] = tile
+            return tile
         
-        # Headers with auth
-        headers = {
-            "Authorization": f"Bearer {self.pollinations_key}"
-        }
-        
-        max_retries = 3
-        retry_delay = 2
-        
-        for attempt in range(max_retries):
-            try:
-                logger.info(f"Calling Pollinations API (attempt {attempt + 1}/{max_retries})")
-                
-                response = requests.get(
-                    url,
-                    params=params,
-                    headers=headers,
-                    timeout=60
-                )
-                
-                if response.status_code == 200:
-                    # Save image to file
-                    filename = f"tile_{tile_id or int(time.time())}_{mood}_{style.replace(' ', '_')}.jpg"
-                    filepath = os.path.join(self.output_dir, filename)
-                    
-                    with open(filepath, 'wb') as f:
-                        f.write(response.content)
-                    
-                    # Create relative URL
-                    image_url = f"{self.output_dir}/{filename}"
-                    
-                    # Convert to base64
-                    base64_data = self._image_to_base64(filepath)
-                    
-                    # Success - return tile data with URL and base64
-                    tile = {
-                        "id": tile_id,
-                        "prompt": prompt,
-                        "mood": mood,
-                        "style": style,
-                        "image_url": image_url,
-                        "base64": base64_data,
-                        "image_size": len(response.content),
-                        "width": width,
-                        "height": height,
-                        "generated_at": time.time(),
-                        "provider": "pollinations"
-                    }
-                    
-                    # Cache it
-                    self.image_cache[cache_key] = tile
-                    
-                    logger.info(f"✓ Tile saved: {filepath} ({len(response.content)} bytes)")
-                    return tile
-                
-                elif response.status_code == 429:
-                    # Rate limited
-                    logger.warning(f"Rate limited (429), waiting {retry_delay * 2}s...")
-                    time.sleep(retry_delay * 2)
-                    retry_delay *= 2  # Exponential backoff
-                
-                else:
-                    logger.error(f"API error {response.status_code}: {response.text[:200]}")
-                    
-                    # Try fallback on last attempt
-                    if attempt == max_retries - 1:
-                        return self._fallback_gemini_generation(prompt, mood, style, width, height, tile_id)
-            
-            except requests.exceptions.Timeout:
-                logger.warning(f"Request timeout on attempt {attempt + 1}")
-                if attempt == max_retries - 1:
-                    return self._fallback_gemini_generation(prompt, mood, style, width, height, tile_id)
-            
-            except Exception as e:
-                logger.error(f"Unexpected error: {str(e)}")
-                if attempt == max_retries - 1:
-                    return self._fallback_gemini_generation(prompt, mood, style, width, height, tile_id)
-        
-        # All retries failed
-        logger.error(f"Failed to generate tile after {max_retries} attempts")
+        logger.error("Failed to generate tile")
         return None
     
-    def _fallback_gemini_generation(
+    def _gemini_text_to_image(
         self,
         prompt: str,
         mood: str,
@@ -479,76 +402,83 @@ Return ONLY valid JSON, no additional text."""
         tile_id: Optional[int]
     ) -> Optional[Dict[str, Any]]:
         """
-        Fallback image generation using Google Gemini.
+        Text-to-image generation using Gemini generate_content.
         
-        Uses Imagen 3.0 for image generation.
+        Uses gemini-3-pro-image-preview model for text-to-image generation.
         """
-        if not self.genai_client:
-            logger.error("Gemini fallback not available - no API key or client failed to load")
-            return None
-        
         try:
-            logger.info("Using Gemini Imagen fallback for image generation...")
+            logger.info(f"Gemini text-to-image generation...")
             
-            # Gemini prompt for image generation
-            gemini_prompt = f"Generate a high-quality, professional product photography image: {prompt}. High resolution, studio lighting, commercial quality."
+            # Create generation prompt
+            generation_prompt = f"""Generate a high-quality, professional commercial image:
+- Content: {prompt}
+- Mood: {mood}
+- Style: {style}
+
+Create a professional, commercial-quality image suitable for a marketing mood board.
+High resolution, studio-quality result."""
             
-            # Generate image using Gemini Imagen
-            response = self.genai_client.models.generate_images(
-                model='imagen-3.0-generate-001',
-                prompt=gemini_prompt,
-                config={
-                    'number_of_images': 1,
-                    'aspect_ratio': '1:1',
-                    'safety_filter_level': 'block_only_high',
-                    'person_generation': 'allow_adult'
-                }
+            logger.info(f"Generating with prompt: {generation_prompt[:100]}...")
+            
+            # Generate content with text input only
+            response = self.genai_client.models.generate_content(
+                model="gemini-3-pro-image-preview",
+                contents=[generation_prompt],
+                config=self.genai_types.GenerateContentConfig(
+                    image_config=self.genai_types.ImageConfig(
+                        aspect_ratio="1:1",
+                        image_size="1K"
+                    )
+                )
             )
             
             # Extract image from response
-            if response.generated_images and len(response.generated_images) > 0:
-                import base64
-                
-                # Get first generated image
-                generated_image = response.generated_images[0]
-                
-                # Decode base64 image
-                image_data = base64.b64decode(generated_image.image.image_bytes)
-                
-                # Save image to file
-                filename = f"tile_{tile_id or int(time.time())}_{mood}_{style.replace(' ', '_')}_gemini.jpg"
-                filepath = os.path.join(self.output_dir, filename)
-                
-                with open(filepath, 'wb') as f:
-                    f.write(image_data)
-                
-                image_url = f"{self.output_dir}/{filename}"
-                
-                # Convert to base64
-                base64_data = self._image_to_base64(filepath)
-                
-                tile = {
-                    "id": tile_id,
-                    "prompt": prompt,
-                    "mood": mood,
-                    "style": style,
-                    "image_url": image_url,
-                    "base64": base64_data,
-                    "image_size": len(image_data),
-                    "width": width,
-                    "height": height,
-                    "generated_at": time.time(),
-                    "provider": "gemini"
-                }
-                
-                logger.info(f"✓ Gemini fallback success: {filepath}")
-                return tile
+            image_parts = [
+                part for part in getattr(response, "parts", [])
+                if hasattr(part, "inline_data") and 
+                   getattr(part.inline_data, "mime_type", "").startswith("image/")
+            ]
             
-            logger.warning("Gemini response did not contain image data")
-            return None
+            if not image_parts:
+                logger.warning("No image returned by Gemini")
+                return None
+            
+            # Get image bytes
+            image_bytes = image_parts[0].inline_data.data
+            
+            # Save image
+            filename = f"tile_{tile_id or int(time.time())}_{mood}_{style.replace(' ', '_')}_gemini.jpg"
+            filepath = os.path.join(self.output_dir, filename)
+            
+            with open(filepath, 'wb') as f:
+                f.write(image_bytes)
+            
+            image_url = f"{self.output_dir}/{filename}"
+            
+            # Convert to base64
+            base64_data = self._image_to_base64(filepath)
+            
+            tile = {
+                "id": tile_id,
+                "prompt": prompt,
+                "mood": mood,
+                "style": style,
+                "image_url": image_url,
+                "base64": base64_data,
+                "image_size": len(image_bytes),
+                "width": width,
+                "height": height,
+                "generated_at": time.time(),
+                "provider": "gemini_text2img"
+            }
+            
+            logger.info(f"✓ Gemini text-to-image success: {filepath} ({len(image_bytes)/1024:.1f} KB)")
+            return tile
             
         except Exception as e:
-            logger.error(f"Gemini fallback failed: {str(e)}")
+            logger.error(f"Gemini text-to-image failed: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def _gemini_image_to_image(
