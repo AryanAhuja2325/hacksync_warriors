@@ -31,8 +31,16 @@ const login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ msg: "Wrong password" });
     const token = createToken(user);
+
     const { password: _, ...userData } = user._doc;
-    res.json({ token, user: userData });
+
+    res.cookie('token', token, {
+      maxAge: 900000, // Cookie expires after 15 minutes (in milliseconds)
+      httpOnly: true, // Makes the cookie inaccessible to client-side JavaScript (security best practice)
+      secure: true,   // Ensures the cookie is only sent over HTTPS (set to false for localhost testing with HTTP)
+    });
+
+    res.json({user: userData });
   } catch (err) {
     res.status(500).json({ msg: "Login failed", error: err.message });
   }
