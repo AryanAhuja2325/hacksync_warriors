@@ -6,6 +6,8 @@ const connect=require('./config/db')
 connect()
 // require("./passport")
 const authRoutes=require('./routes/auth.routes')
+const fileRoutes=require('./routes/file.routes')
+const promptRoutes=require('./routes/prompt.routes')
 const competitorRoutes=require('./routes/competitor.routes')
 
 const app=express()
@@ -19,6 +21,8 @@ app.use(express.json())
 app.use(passport.initialize())
 
 app.use('/auth',authRoutes)
+app.use("/files", fileRoutes);
+app.use('/prompt',promptRoutes)
 app.use('/api/competitors',competitorRoutes)
 
 app.listen(5000,()=>{
