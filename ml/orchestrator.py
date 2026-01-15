@@ -11,6 +11,7 @@ from agents.content_fetchers import fetch_youtube_content
 from agents.content_normalizer import normalize_content_list
 from agents.content_summarizer import summarize_content
 from agents.visualAgent import VisualAgent
+from agents.mediaAgent import generate_media_plan
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -218,6 +219,32 @@ class VisualMoodBoardResponse(BaseModel):
     json_file: str
 
 
+class MediaPlanRequest(BaseModel):
+    domain: str
+    target_audience: str
+    competitors: List[str] = []
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "domain": "sustainable fashion",
+                "target_audience": "environmentally conscious college students",
+                "competitors": ["Everlane", "Patagonia", "Reformation"]
+            }
+        }
+
+
+class MediaPlanResponse(BaseModel):
+    status: str
+    recommended_platforms: List[Dict[str, Any]]
+    best_posting_times: Dict[str, Any]
+    content_types: List[str]
+    growth_strategies: List[str]
+    mistakes_to_avoid: List[str]
+    competitor_insights: Dict[str, Any]
+    metadata: Dict[str, Any]
+
+
 # Routes
 @app.get("/")
 async def root():
@@ -231,7 +258,8 @@ async def root():
             "youtube_discovery",
             "market_discovery",
             "content_aware_outreach",
-            "visual_mood_board"
+            "visual_mood_board",
+            "media_planning"
         ]
     }
 
@@ -539,6 +567,40 @@ async def generate_mood_board(request: VisualMoodBoardRequest):
         logger.error(f"Mood board generation error: {e}")
         raise HTTPException(status_code=500, detail=f"Mood board generation failed: {str(e)}")
 
+
+@app.post("/generate-media-plan", response_model=MediaPlanResponse)
+async def generate_media_plan_endpoint(request: MediaPlanRequest):
+    """
+    Generate media planning recommendations
+    
+    Returns platform recommendations, posting times, content strategies,
+    and growth tactics based on domain, audience, and competitors.
+    """
+    try:
+        logger.info(f"Generating media plan for domain: {request.domain}")
+        
+        result = generate_media_plan(
+            domain=request.domain,
+            target_audience=request.target_audience,
+            competitors=request.competitors
+        )
+        
+        logger.info(f"Media plan generated: {len(result['recommended_platforms'])} platforms recommended")
+        
+        return MediaPlanResponse(
+            status="success",
+            recommended_platforms=result['recommended_platforms'],
+            best_posting_times=result['best_posting_times'],
+            content_types=result['content_types'],
+            growth_strategies=result['growth_strategies'],
+            mistakes_to_avoid=result['mistakes_to_avoid'],
+            competitor_insights=result['competitor_insights'],
+            metadata=result['metadata']
+        )
+        
+    except Exception as e:
+        logger.error(f"Media planning error: {e}")
+        raise HTTPException(status_code=500, detail=f"Media planning failed: {str(e)}")
 
 
 if __name__ == "__main__":
