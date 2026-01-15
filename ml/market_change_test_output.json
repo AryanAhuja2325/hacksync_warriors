@@ -1,0 +1,58 @@
+{
+  "status": "success",
+  "domain": "women's fashion",
+  "target_audience": "young women aged 18-30",
+  "influencers": [
+    {
+      "title": "Starr - Amazon Fashion Influencer (@starrjoyblog) • Instagram ...",
+      "link": "https://www.instagram.com/starrjoyblog/",
+      "snippet": "25K followers · 999 following · 1798 posts · @starrjoyblog: “Over 40. Size 8+. Millennial Glow-Ups✨ Affordable Amazon & Pinterest looks 🛍️ Helping women stop ...",
+      "relevance_score": 5.5,
+      "confidence": "medium"
+    },
+    {
+      "title": "Shyama | Fashion Influencer (@thelittlevibe) • Instagram photos and ...",
+      "link": "https://www.instagram.com/thelittlevibe/",
+      "snippet": "41K followers · 1.3K+ following · 356 posts · @thelittlevibe: “shukr | sabr | khushi making videos of fashion and fun I do in my life vadodara”",
+      "relevance_score": 5.0,
+      "confidence": "medium"
+    },
+    {
+      "title": "Akshita Vohra | Fashion & Beauty (@fashionfeedweb) • Instagram ...",
+      "link": "https://www.instagram.com/fashionfeedweb/",
+      "snippet": "117K followers · 1K+ following · 3007 posts · @fashionfeedweb: “Bridey ❣️ Chd|DEL Artist @tistmedia”",
+      "relevance_score": 4.0,
+      "confidence": "medium"
+    }
+  ],
+  "insights": {
+    "total_influencers_found": 3,
+    "platform_distribution": {
+      "instagram": 3,
+      "youtube": 0,
+      "tiktok": 0,
+      "twitter": 0,
+      "linkedin": 0
+    },
+    "recommended_platforms": [
+      "instagram"
+    ],
+    "average_relevance_score": 4.83,
+    "high_confidence_count": 0,
+    "search_effectiveness": "medium"
+  },
+  "recommendations": [
+    "Found 3 potential influencers. Verify relevance and engagement before outreach.",
+    "Instagram: Prioritize micro-influencers (10k-100k) with authentic engagement.",
+    "YouTube: Look for creators with consistent upload schedules and engaged comment sections.",
+    "Always verify: (1) Content alignment, (2) Audience demographics, (3) Engagement authenticity."
+  ],
+  "filters": {
+    "country": "IN",
+    "recent_days": null,
+    "platforms": [
+      "Instagram",
+      "YouTube"
+    ]
+  }
+}
