@@ -213,7 +213,6 @@ async def generate_campaign(request: CampaignRequest):
         
         logger.info(f"Generating campaign for product: {strategy.get('product', 'Unknown')}")
         
-        # Call Copywriting Agent
         logger.info("Calling copywriting agent...")
         copywriting_result = generate_copy(strategy)
         logger.info("Copywriting agent completed")
