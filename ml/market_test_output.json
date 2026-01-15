@@ -1,0 +1,56 @@
+{
+  "status": "success",
+  "domain": "sustainable products",
+  "target_audience": "environmentally conscious college students",
+  "influencers": [
+    {
+      "title": "Sustainable Lifestyle (@shwetakataria_) • Instagram photos and ...",
+      "link": "https://www.instagram.com/shwetakataria_/",
+      "snippet": "Learn to Live in harmony with nature. Simple everyday swaps to a sustainable Life. Do Yoga with me @shwethyog. Vegan."
+    },
+    {
+      "title": "Mridula Joshi (@ullisu.official) • Instagram photos and videos",
+      "link": "https://www.instagram.com/ullisu.official/",
+      "snippet": "1 @nirvanaorganic.in They make sustainable self care and consumable products ... Join me for this curated eco-conscious travel experience in the mountains The ..."
+    },
+    {
+      "title": "Andrew Ng (@AndrewYNg) / Posts / X",
+      "link": "https://twitter.com/AndrewYNg",
+      "snippet": "Andrew Ng (@AndrewYNg) - Posts - Co-Founder of Coursera; Stanford CS adjunct faculty. Former head of Baidu AI Group/Google Brain. #a."
+    },
+    {
+      "title": "Andrej Karpathy (@karpathy) / Posts / X",
+      "link": "https://twitter.com/karpathy",
+      "snippet": "... green pastures for LLM apps? Personally I suspect that LLM labs will trend to graduate the generally capable college student ... environment, data and context."
+    },
+    {
+      "title": "Naval (@naval) / Posts / X",
+      "link": "https://twitter.com/naval",
+      "snippet": "- You don't have to be a 'person of influence' to be influential. In fact, the most influential people in my life are probably not even aware of the things they ..."
+    }
+  ],
+  "insights": {
+    "total_influencers_found": 5,
+    "platform_distribution": {
+      "instagram": 2,
+      "youtube": 0,
+      "tiktok": 0,
+      "blog": 0,
+      "twitter": 0
+    },
+    "recommended_platforms": [
+      "instagram"
+    ],
+    "search_effectiveness": "high"
+  },
+  "recommendations": [
+    "Found 5 relevant influencers. Consider reaching out to top 3 for collaboration opportunities.",
+    "For Instagram campaigns, prioritize influencers with authentic engagement over follower count.",
+    "YouTube collaborations work best with product reviews or tutorial-style content.",
+    "Always verify influencer authenticity and audience demographics before partnership."
+  ],
+  "filters": {
+    "country": "IN",
+    "recent_days": null
+  }
+}
