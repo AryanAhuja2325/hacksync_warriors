@@ -19,7 +19,7 @@ exports.uploadPDF = async (req, res) => {
         const fileUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(
             fileName
         )}?alt=media`;
-        res.json({'op': fileUrl});
+        res.json({ url: fileUrl });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

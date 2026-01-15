@@ -10,10 +10,17 @@
 // module.exports = upload;
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'tempUploads/');
+        const uploadDir = path.join(__dirname, '../../tempUploads');
+        try {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        } catch (err) {
+            // ignore mkdir errors and let multer handle if necessary
+        }
+        cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
         const uniqueName = `${Date.now()}-${file.originalname}`;
@@ -26,7 +33,7 @@ const fileFilter = (req, file, cb) => {
         'application/pdf',
     ];
     if (!allowedTypes.includes(file.mimetype)) {
-        return cb(new Error('Only PDF or DOCX files are allowed!'), false);
+        return cb(new Error('Only PDF files are allowed!'), false);
     }
     cb(null, true);
 };
