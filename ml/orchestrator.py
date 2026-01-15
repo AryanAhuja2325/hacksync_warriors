@@ -10,6 +10,7 @@ from agents.outreach import generate_outreach_for_influencer
 from agents.content_fetchers import fetch_youtube_content
 from agents.content_normalizer import normalize_content_list
 from agents.content_summarizer import summarize_content
+from agents.visualAgent import VisualAgent
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -186,6 +187,37 @@ class ContentAwareOutreachResponse(BaseModel):
     content_analysis: Optional[Dict[str, Any]] = None
 
 
+class VisualMoodBoardRequest(BaseModel):
+    strategy: Dict[str, Any]
+    num_variations: int = 4
+    reference_image_path: Optional[str] = None
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "strategy": {
+                    "product": "EcoBottle - Sustainable Water Bottle",
+                    "audience": "environmentally conscious college students",
+                    "tone": "friendly and inspiring",
+                    "stylistics": "sustainability and eco-friendly lifestyle"
+                },
+                "num_variations": 4,
+                "reference_image_path": "path/to/reference.jpg"
+            }
+        }
+
+
+class VisualMoodBoardResponse(BaseModel):
+    status: str
+    product: str
+    audience: str
+    visual_theme: str
+    color_palette: List[str]
+    tiles: List[Dict[str, Any]]
+    total_generated: int
+    json_file: str
+
+
 # Routes
 @app.get("/")
 async def root():
@@ -198,7 +230,8 @@ async def root():
             "ai_influencer_discovery",
             "youtube_discovery",
             "market_discovery",
-            "content_aware_outreach"
+            "content_aware_outreach",
+            "visual_mood_board"
         ]
     }
 
@@ -453,6 +486,58 @@ async def generate_content_aware_outreach(request: ContentAwareOutreachRequest):
     except Exception as e:
         logger.error(f"Outreach generation error: {e}")
         raise HTTPException(status_code=500, detail=f"Outreach generation failed: {str(e)}")
+
+
+@app.post("/generate-mood-board", response_model=VisualMoodBoardResponse)
+async def generate_mood_board(request: VisualMoodBoardRequest):
+    """
+    Generate visual mood board with 4 images based on campaign strategy
+    
+    Generates product-specific images showing target audience using the product.
+    Supports optional reference image for image-to-image generation.
+    Returns JSON file with image URLs and base64 data.
+    
+    At least 1 image will depict the target audience using the product (lifestyle shot).
+    """
+    try:
+        strategy = request.strategy
+        logger.info(f"Generating mood board for product: {strategy.get('product', 'Unknown')}")
+        
+        # Initialize visual agent
+        visual_agent = VisualAgent()
+        
+        # Generate mood board
+        result = visual_agent.generate_mood_board(
+            strategy=strategy,
+            num_variations=request.num_variations,
+            reference_image_path=request.reference_image_path
+        )
+        
+        logger.info(f"Mood board generated: {result['total_generated']}/{result['requested']} tiles")
+        
+        # Get JSON filename (latest file in output directory)
+        import os
+        import glob
+        json_files = glob.glob(os.path.join(visual_agent.output_dir, "mood_board_*.json"))
+        latest_json = max(json_files, key=os.path.getctime) if json_files else "N/A"
+        
+        return VisualMoodBoardResponse(
+            status=result['status'],
+            product=result['product'],
+            audience=result['audience'],
+            visual_theme=result['visual_theme'],
+            color_palette=result['color_palette'],
+            tiles=result['tiles'],
+            total_generated=result['total_generated'],
+            json_file=latest_json
+        )
+        
+    except ValueError as e:
+        logger.error(f"Configuration error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Mood board generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Mood board generation failed: {str(e)}")
 
 
 
