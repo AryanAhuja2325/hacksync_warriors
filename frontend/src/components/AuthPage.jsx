@@ -352,6 +352,8 @@ export default function AuthPage({ onAuthSuccess = () => {} }) {
               </div>
             </div>
 
+
+
             {/* Forgot Password - Login only */}
             {isLogin && (
               <div style={{ textAlign: 'right', marginTop: '-0.5rem' }}>

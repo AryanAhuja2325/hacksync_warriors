@@ -41,15 +41,34 @@ INSTAGRAM CAPTIONS:
 
 AD COPY:
 - Each ad_copy should be persuasive but factual.
+- Keep under 150 characters
 
 BLOG IDEAS:
-- Each blog_idea should be a short title + one-line description.
+- Each blog_idea should be a title + one-line description (example: "Top 5 Ways to Stay Hydrated - Simple hydration tips for busy students")
+
+CRITICAL: Return ONLY an array of plain strings for each field, NOT objects.
 
 Return ONLY valid JSON in this exact structure:
 {
-  "captions": [],
-  "ad_copy": [],
-  "blog_ideas": []
+  "captions": ["caption string 1", "caption string 2", "caption string 3"],
+  "ad_copy": ["ad text 1", "ad text 2", "ad text 3"],
+  "blog_ideas": ["blog title 1 - description", "blog title 2 - description", "blog title 3 - description"]
+}
+
+Example output:
+{
+  "captions": [
+    "honestly this water bottle changed my campus life 😅 stays cold all day and I'm actually drinking more water now #hydration #studentlife #ecofriendly #sustainable #campusessentials",
+    "just found out my reusable bottle saved me like $200 this semester on drinks 💧 math that works #budgeting #collegekids #zerowaste"
+  ],
+  "ad_copy": [
+    "Stay hydrated all day - keeps drinks cold for 24h. Perfect for busy students.",
+    "Eco-friendly design meets everyday convenience. Join the movement."
+  ],
+  "blog_ideas": [
+    "5 Hydration Hacks Every College Student Needs - Simple ways to drink more water on a busy schedule",
+    "The True Cost of Single-Use Bottles - Why switching to reusable saves you money"
+  ]
 }"""
 
 def generate_copy(strategy_json: dict) -> dict:

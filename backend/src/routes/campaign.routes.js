@@ -6,8 +6,8 @@ const auth = require("../middleware/auth.middleware");
 const upload = require("../middleware/upload");
 
 router.post(
-  "/",
-  auth(),
+  "/upload-prompt",
+  auth({ optional: true }), // Make auth optional for testing
   upload.single("file"), // optional PDF upload
   campaignController.createCampaign
 );

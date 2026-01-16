@@ -30,12 +30,10 @@ class VisualAgent:
     """
     
     def __init__(self):
-        self.pollinations_key = os.getenv("POLLINATIONS_API_KEY")
+        self.pollinations_key = os.getenv("POLLINATIONS_API_KEY")  # Not required but stored if available
         mistral_key = os.getenv("MISTRAL_API_KEY")
         self.gemini_key = os.getenv("GEMINI_API_KEY")
         
-        if not self.pollinations_key:
-            raise ValueError("POLLINATIONS_API_KEY not found in .env")
         if not mistral_key:
             raise ValueError("MISTRAL_API_KEY not found in .env")
         
@@ -388,10 +386,8 @@ Return ONLY valid JSON, no additional text."""
             "enhance": "false"
         }
         
-        # Headers with auth
-        headers = {
-            "Authorization": f"Bearer {self.pollinations_key}"
-        }
+        # Pollinations API is now free and doesn't require auth headers
+        headers = {}
         
         max_retries = 3
         retry_delay = 2

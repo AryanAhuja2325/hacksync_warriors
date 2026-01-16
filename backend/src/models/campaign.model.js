@@ -18,7 +18,7 @@ const agentOutputSchema = new mongoose.Schema({
 }, { _id: false });
 
 const campaignSchema = new mongoose.Schema({
-  email: {type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User'},
+  // email: {type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User'},
   input: { type: inputSchema, required: true },
 
   strategy: { type: mongoose.Schema.Types.Mixed },

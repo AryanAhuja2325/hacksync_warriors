@@ -1,0 +1,97 @@
+{
+  "recommended_platforms": [
+    {
+      "platform": "YouTube",
+      "relevance_score": 1.0
+    },
+    {
+      "platform": "Instagram",
+      "relevance_score": 0.86
+    },
+    {
+      "platform": "Twitter",
+      "relevance_score": 0.52
+    },
+    {
+      "platform": "LinkedIn",
+      "relevance_score": 0.41
+    }
+  ],
+  "best_posting_times": {
+    "YouTube": {
+      "weekday": [
+        "2PM-4PM",
+        "6PM-10PM"
+      ],
+      "weekend": [
+        "9AM-11AM",
+        "2PM-6PM"
+      ]
+    },
+    "Instagram": {
+      "weekday": [
+        "9AM-11AM",
+        "1PM-3PM",
+        "7PM-9PM"
+      ],
+      "weekend": [
+        "11AM-1PM",
+        "7PM-9PM"
+      ]
+    },
+    "Twitter": {
+      "weekday": [
+        "8AM-10AM",
+        "12PM-1PM",
+        "5PM-6PM"
+      ],
+      "weekend": [
+        "9AM-11AM",
+        "7PM-9PM"
+      ]
+    },
+    "LinkedIn": {
+      "weekday": [
+        "7AM-9AM",
+        "12PM-1PM",
+        "5PM-6PM"
+      ],
+      "weekend": []
+    }
+  },
+  "content_types": [
+    "eco tips",
+    "product reviews",
+    "lifestyle changes",
+    "educational content"
+  ],
+  "growth_strategies": [
+    "post consistently (3-5x per week)",
+    "engage authentically with followers",
+    "use relevant hashtags strategically",
+    "collaborate with niche influencers",
+    "analyze and optimize content performance"
+  ],
+  "mistakes_to_avoid": [
+    "posting inconsistently",
+    "ignoring audience engagement",
+    "using too many hashtags",
+    "buying followers/engagement",
+    "copying competitors exactly",
+    "not tracking analytics"
+  ],
+  "competitor_insights": {
+    "competition_level": "medium",
+    "recommended_approach": "consistent quality content with strategic collaborations",
+    "differentiation_tips": [
+      "develop signature content style",
+      "engage actively with audience",
+      "collaborate with complementary brands"
+    ]
+  },
+  "metadata": {
+    "inferred_age_group": "18-24",
+    "normalized_domain": "sustainability",
+    "target_audience": "environmentally conscious college students aged 18-25"
+  }
+}

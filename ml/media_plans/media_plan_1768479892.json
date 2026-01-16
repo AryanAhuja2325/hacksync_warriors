@@ -1,0 +1,87 @@
+{
+  "recommended_platforms": [
+    {
+      "platform": "YouTube",
+      "relevance_score": 1.0
+    },
+    {
+      "platform": "Instagram",
+      "relevance_score": 0.86
+    },
+    {
+      "platform": "TikTok",
+      "relevance_score": 0.71
+    }
+  ],
+  "best_posting_times": {
+    "YouTube": {
+      "weekday": [
+        "2PM-4PM",
+        "6PM-10PM"
+      ],
+      "weekend": [
+        "9AM-11AM",
+        "2PM-6PM"
+      ]
+    },
+    "Instagram": {
+      "weekday": [
+        "9AM-11AM",
+        "1PM-3PM",
+        "7PM-9PM"
+      ],
+      "weekend": [
+        "11AM-1PM",
+        "7PM-9PM"
+      ]
+    },
+    "TikTok": {
+      "weekday": [
+        "6AM-9AM",
+        "12PM-2PM",
+        "7PM-11PM"
+      ],
+      "weekend": [
+        "9AM-11AM",
+        "2PM-6PM",
+        "7PM-11PM"
+      ]
+    }
+  },
+  "content_types": [
+    "day in life",
+    "hauls",
+    "home tours",
+    "productivity tips",
+    "aesthetic content"
+  ],
+  "growth_strategies": [
+    "post consistently (3-5x per week)",
+    "engage authentically with followers",
+    "use relevant hashtags strategically",
+    "collaborate with niche influencers",
+    "analyze and optimize content performance"
+  ],
+  "mistakes_to_avoid": [
+    "posting inconsistently",
+    "ignoring audience engagement",
+    "using too many hashtags",
+    "buying followers/engagement",
+    "copying competitors exactly",
+    "not tracking analytics"
+  ],
+  "competitor_insights": {
+    "competition_level": "low",
+    "recommended_approach": "establish strong presence and consistency",
+    "differentiation_tips": [
+      "be first-mover in your niche",
+      "build authority through education",
+      "create content library"
+    ]
+  },
+  "metadata": {
+    "inferred_age_group": "18-24",
+    "normalized_domain": "lifestyle",
+    "target_audience": "target audience"
+  }
+}

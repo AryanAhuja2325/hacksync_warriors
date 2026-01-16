@@ -8,6 +8,8 @@ const SCRAPINGBEE_API_KEY = process.env.SCRAPINGBEE_API_KEY || 'CKZJJZGD8EAWSAZC
  * Scrape competitor website and extract insights
  */
 const analyzeCompetitor = async (req, res) => {
+  console.log('Starting competitor analysis...');
+  console.log('Request body:', req.body);
   try {
     const { brandContext, competitorUrls, industry, autoDiscover } = req.body;
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   RefreshCw, 
   Download, 
@@ -7,7 +7,6 @@ import {
   Edit3, 
   Camera, 
   Layout, 
-  Instagram, 
   Twitter, 
   MessageSquare,
   Users,
@@ -16,67 +15,34 @@ import {
 
 export default function CampaignCanvas({ data, prompt }) {
   const [isEditMode, setIsEditMode] = useState(false);
-  const [postingStatus, setPostingStatus] = useState({}); // Track posting state per post
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-  const handlePostToInstagram = async (post) => {
-    setPostingStatus(prev => ({ ...prev, [post.id]: 'posting' }));
+  // Simulate API response for campaign data
+  useEffect(() => {
+    // Simulate endpoint delay
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 20000); // 2 second delay for skeleton
 
-    try {
-      const token = localStorage.getItem('token');
-      
-      // Call backend proxy endpoint instead of Instagram API directly
-      const response = await fetch(`${API_URL}/api/instagram/post`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          image_url: post.image,
-          caption: post.caption || ''
-        })
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Replace Instagram posting with a simple share helper (copies image URL to clipboard)
+  const handleShare = (post) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(post.image).then(() => {
+        alert('Image URL copied to clipboard');
+      }).catch(() => {
+        alert(post.image);
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.msg || 'Failed to post to Instagram');
-      }
-      
-      setPostingStatus(prev => ({ ...prev, [post.id]: 'success' }));
-      console.log('Successfully posted to Instagram:', data);
-      
-      // Show success toast
-      setSuccessMessage('🎉 Successfully posted to Instagram!');
-      setShowSuccessToast(true);
-      
-      // Hide toast after 5 seconds
-      setTimeout(() => {
-        setShowSuccessToast(false);
-      }, 5000);
-      
-      // Reset status after 3 seconds
-      setTimeout(() => {
-        setPostingStatus(prev => ({ ...prev, [post.id]: null }));
-      }, 3000);
-
-    } catch (error) {
-      console.error('Instagram posting error:', error);
-      setPostingStatus(prev => ({ ...prev, [post.id]: 'error' }));
-      alert(`Failed to post: ${error.message}`);
-      
-      // Reset status after 3 seconds
-      setTimeout(() => {
-        setPostingStatus(prev => ({ ...prev, [post.id]: null }));
-      }, 3000);
+    } else {
+      alert(post.image);
     }
-  };
+  }; 
 
-  // Mock data if none provided
+  // Mock data if none provided (loaded after simulation)
   const campaign = data || {
     overview: {
       product: "SonicBeat Pro",
@@ -84,7 +50,7 @@ export default function CampaignCanvas({ data, prompt }) {
       goal: "Raise Brand Awareness"
     },
     socialPosts: [
-      { id: 1, type: 'instagram', image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400', caption: 'Feel the beat, Elevate your performance. #SonicBeatPro' },
+      { id: 1, type: 'social', image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400', caption: 'Feel the beat, Elevate your performance. #SonicBeatPro' },
       { id: 2, type: 'tiktok', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400', caption: 'Crush your workout with world-class sound.' },
       { id: 3, type: 'twitter', image: 'https://images.unsplash.com/photo-1491833485246-7588b2e5d994?w=400', caption: 'Wireless freedom for your toughest sets. 🎧🔥' }
     ],
@@ -105,12 +71,251 @@ export default function CampaignCanvas({ data, prompt }) {
     ]
   };
 
+  // Skeleton Components
+  const SkeletonBar = ({ width = '100%' }) => (
+    <div style={{
+      width,
+      height: '12px',
+      background: 'linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%)',
+      backgroundSize: '200% 100%',
+      animation: 'loading 1.5s infinite',
+      borderRadius: '4px',
+      marginBottom: '8px'
+    }} />
+  );
+
+  const SkeletonOverview = () => (
+    <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 640 ? '1fr' : 'repeat(3, 1fr)', gap: '1rem' }}>
+      {[1, 2, 3].map(i => (
+        <div key={i}>
+          <SkeletonBar width="60%" />
+          <SkeletonBar width="80%" />
+        </div>
+      ))}
+    </div>
+  );
+
+  const SkeletonSocialPost = () => (
+    <div style={{ minWidth: '180px', background: 'rgba(0,0,0,0.3)', borderRadius: '0.75rem', overflow: 'hidden', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+      <div style={{ width: '100%', height: '120px', background: 'linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%)', backgroundSize: '200% 100%', animation: 'loading 1.5s infinite', borderRadius: '0.75rem 0.75rem 0 0' }} />
+      <div style={{ padding: '0.75rem' }}>
+        <SkeletonBar width="40%" />
+        <SkeletonBar width="100%" />
+        <SkeletonBar width="70%" />
+        <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.75rem' }}>
+          <div style={{ flex: 1, height: '24px', background: 'rgba(255,255,255,0.05)', borderRadius: '0.4rem', border: '1px solid rgba(148, 163, 184, 0.2)' }} />
+          <div style={{ flex: 1, height: '24px', background: 'rgba(56, 189, 248, 0.1)', borderRadius: '0.4rem', border: '1px solid rgba(56, 189, 248, 0.2)' }} />
+        </div>
+      </div>
+    </div>
+  );
+
+  const SkeletonSocialPosts = () => (
+    <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+      {[1, 2, 3].map(i => <SkeletonSocialPost key={i} />)}
+    </div>
+  );
+
+  const SkeletonInfluencer = () => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '0.75rem', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        <div style={{ width: '1.75rem', height: '1.75rem', borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5, #06b6d4)', animation: 'loading 1.5s infinite' }} />
+        <div>
+          <SkeletonBar width="70%" />
+          <SkeletonBar width="50%" />
+        </div>
+      </div>
+      <div style={{ width: '0.4rem', height: '0.4rem', borderRadius: '50%', background: 'linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%)', backgroundSize: '200% 100%', animation: 'loading 1.5s infinite' }} />
+    </div>
+  );
+
+  const SkeletonInfluencers = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      {[1, 2, 3].map(i => <SkeletonInfluencer key={i} />)}
+      <div style={{ height: '32px', background: 'rgba(255,255,255,0.02)', borderRadius: '0.75rem', border: '1px dotted rgba(148, 163, 184, 0.3)', marginTop: '0.5rem' }} />
+    </div>
+  );
+
+  const SkeletonExportOption = () => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(148, 163, 184, 0.1)', borderRadius: '0.75rem' }}>
+      <div style={{ width: '1rem', height: '1rem', background: 'linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%)', backgroundSize: '200% 100%', animation: 'loading 1.5s infinite', borderRadius: '2px' }} />
+      <SkeletonBar width="80%" />
+    </div>
+  );
+
+  const SkeletonExportOptions = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+      {[1, 2, 3, 4].map(i => <SkeletonExportOption key={i} />)}
+    </div>
+  );
+
+  const SkeletonBlogPost = () => (
+    <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.25rem', borderRadius: '1rem', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+      <SkeletonBar width="60%" />
+      <SkeletonBar width="100%" />
+      <SkeletonBar width="100%" />
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
+        <div style={{ height: '28px', width: '60px', background: 'rgba(255,255,255,0.05)', borderRadius: '0.4rem' }} />
+        <div style={{ height: '28px', width: '80px', background: 'rgba(56, 189, 248, 0.1)', borderRadius: '0.4rem' }} />
+      </div>
+    </div>
+  );
+
+  const SkeletonMoodboardImage = () => (
+    <div style={{ width: '100%', height: '80px', background: 'linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%)', backgroundSize: '200% 100%', animation: 'loading 1.5s infinite', borderRadius: '0.6rem', border: '1px solid rgba(148, 163, 184, 0.1)' }} />
+  );
+
+  const SkeletonMoodboard = () => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+      {[1, 2, 3, 4].map(i => <SkeletonMoodboardImage key={i} />)}
+    </div>
+  );
+
   const SectionHeader = ({ title, icon: Icon }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', borderBottom: '1px solid rgba(148, 163, 184, 0.1)', paddingBottom: '0.5rem' }}>
       {Icon && <Icon style={{ width: '1.1rem', height: '1.1rem', color: '#38bdf8' }} />}
       <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#f9fafb', margin: 0 }}>{title}</h3>
     </div>
   );
+
+  if (loading) {
+    return (
+      <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto', color: '#f9fafb', position: 'relative' }}>
+        {/* Header Bar Skeleton */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', flexDirection: window.innerWidth < 768 ? 'column' : 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1.5rem' }}>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', display: 'block' }}>
+                Generation Prompt
+              </span>
+              <div style={{ 
+                background: 'rgba(15, 23, 42, 0.4)', 
+                border: '1px solid rgba(148, 163, 184, 0.15)', 
+                borderRadius: '0.75rem', 
+                padding: '1rem', 
+                fontSize: '0.95rem',
+                lineHeight: '1.5',
+                color: '#e2e8f0',
+                fontStyle: 'italic',
+                borderLeft: '4px solid #38bdf8',
+                minHeight: '60px'
+              }}>
+                <SkeletonBar />
+                <SkeletonBar width="70%" />
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingTop: '1.5rem' }}>
+              <div style={{ height: '32px', width: '120px', background: 'rgba(255,255,255,0.05)', borderRadius: '0.5rem', border: '1px solid rgba(148, 163, 184, 0.2)' }} />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 640 ? '1fr' : window.innerWidth < 1024 ? 'repeat(6, 1fr)' : 'repeat(12, 1fr)', gap: '1rem' }}>
+          {/* Campaign Overview Skeleton */}
+          <div style={{ 
+            gridColumn: window.innerWidth < 640 ? 'span 1' : window.innerWidth < 1024 ? 'span 6' : 'span 12', 
+            background: 'rgba(15, 23, 42, 0.6)', 
+            backdropFilter: 'blur(10px)', 
+            borderRadius: '1.25rem', 
+            padding: '1rem', 
+            border: '1px solid rgba(148, 163, 184, 0.2)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', borderBottom: '1px solid rgba(148, 163, 184, 0.1)', paddingBottom: '0.5rem' }}>
+              <div style={{ width: '1.1rem', height: '1.1rem', background: 'linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%)', backgroundSize: '200% 100%', animation: 'loading 1.5s infinite', borderRadius: '2px' }} />
+              <SkeletonBar width="40%" />
+            </div>
+            <SkeletonOverview />
+          </div>
+
+          {/* Social Media Content Skeleton */}
+          <div style={{ 
+            gridColumn: window.innerWidth < 640 ? 'span 1' : window.innerWidth < 1024 ? 'span 6' : 'span 6', 
+            background: 'rgba(15, 23, 42, 0.6)', 
+            borderRadius: '1.25rem', 
+            padding: '1.5rem', 
+            border: '1px solid rgba(148, 163, 184, 0.2)' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', borderBottom: '1px solid rgba(148, 163, 184, 0.1)', paddingBottom: '0.5rem' }}>
+              <div style={{ width: '1.1rem', height: '1.1rem', background: 'linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%)', backgroundSize: '200% 100%', animation: 'loading 1.5s infinite', borderRadius: '2px' }} />
+              <SkeletonBar width="40%" />
+            </div>
+            <SkeletonSocialPosts />
+          </div>
+
+          {/* Influencer Outreach Skeleton */}
+          <div style={{ 
+            gridColumn: window.innerWidth < 640 ? 'span 1' : window.innerWidth < 1024 ? 'span 3' : 'span 3', 
+            background: 'rgba(15, 23, 42, 0.6)', 
+            borderRadius: '1.25rem', 
+            padding: '1.5rem', 
+            border: '1px solid rgba(148, 163, 184, 0.2)' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', borderBottom: '1px solid rgba(148, 163, 184, 0.1)', paddingBottom: '0.5rem' }}>
+              <div style={{ width: '1.1rem', height: '1.1rem', background: 'linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%)', backgroundSize: '200% 100%', animation: 'loading 1.5s infinite', borderRadius: '2px' }} />
+              <SkeletonBar width="40%" />
+            </div>
+            <SkeletonInfluencers />
+          </div>
+
+          {/* Export Options Skeleton */}
+          <div style={{ 
+            gridColumn: window.innerWidth < 640 ? 'span 1' : window.innerWidth < 1024 ? 'span 3' : 'span 3', 
+            background: 'rgba(15, 23, 42, 0.3)', 
+            borderRadius: '1.25rem', 
+            padding: '1.5rem', 
+            border: '1px solid rgba(148, 163, 184, 0.1)' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', borderBottom: '1px solid rgba(148, 163, 184, 0.1)', paddingBottom: '0.5rem' }}>
+              <div style={{ width: '1.1rem', height: '1.1rem', background: 'linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%)', backgroundSize: '200% 100%', animation: 'loading 1.5s infinite', borderRadius: '2px' }} />
+              <SkeletonBar width="40%" />
+            </div>
+            <SkeletonExportOptions />
+          </div>
+
+          {/* Blog Post Skeleton */}
+          <div style={{ 
+            gridColumn: window.innerWidth < 640 ? 'span 1' : window.innerWidth < 1024 ? 'span 6' : 'span 7', 
+            background: 'rgba(15, 23, 42, 0.6)', 
+            borderRadius: '1.25rem', 
+            padding: '1.5rem', 
+            border: '1px solid rgba(148, 163, 184, 0.2)' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', borderBottom: '1px solid rgba(148, 163, 184, 0.1)', paddingBottom: '0.5rem' }}>
+              <div style={{ width: '1.1rem', height: '1.1rem', background: 'linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%)', backgroundSize: '200% 100%', animation: 'loading 1.5s infinite', borderRadius: '2px' }} />
+              <SkeletonBar width="40%" />
+            </div>
+            <SkeletonBlogPost />
+          </div>
+
+          {/* Moodboard Skeleton */}
+          <div style={{ 
+            gridColumn: window.innerWidth < 640 ? 'span 1' : window.innerWidth < 1024 ? 'span 6' : 'span 5', 
+            background: 'rgba(15, 23, 42, 0.6)', 
+            borderRadius: '1.25rem', 
+            padding: '1.5rem', 
+            border: '1px solid rgba(148, 163, 184, 0.2)' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', borderBottom: '1px solid rgba(148, 163, 184, 0.1)', paddingBottom: '0.5rem' }}>
+              <div style={{ width: '1.1rem', height: '1.1rem', background: 'linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%)', backgroundSize: '200% 100%', animation: 'loading 1.5s infinite', borderRadius: '2px' }} />
+              <SkeletonBar width="40%" />
+            </div>
+            <SkeletonMoodboard />
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+              <div style={{ flex: 1, height: '32px', background: 'rgba(255,255,255,0.05)', borderRadius: '0.5rem', border: '1px solid rgba(148, 163, 184, 0.2)' }} />
+              <div style={{ flex: 1, height: '32px', background: 'rgba(56, 189, 248, 0.1)', borderRadius: '0.5rem', border: '1px solid rgba(56, 189, 248, 0.2)' }} />
+            </div>
+          </div>
+        </div>
+        
+        <style>{`
+          @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto', color: '#f9fafb', position: 'relative' }}>
@@ -159,10 +364,10 @@ export default function CampaignCanvas({ data, prompt }) {
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingTop: '1.5rem' }}>
-          <button className="secondary-btn" style={{ gap: '0.5rem' }}>
+          {/* <button className="secondary-btn" style={{ gap: '0.5rem' }}>
             <RefreshCw style={{ width: '1rem', height: '1rem', paddingRight: '0.50rem' }} />
             Regenerate All
-          </button>
+          </button> */}
           {/* <button className="primary-btn" style={{ gap: '0.5rem' }}>
             <Download style={{ width: '1rem', height: '1rem' }} />
             Export Campaign
@@ -211,6 +416,7 @@ export default function CampaignCanvas({ data, prompt }) {
           gridTemplateColumns: window.innerWidth < 640 ? '1fr' : 'repeat(3, 1fr)',
           gap: '1rem'
         }}>
+          <SectionHeader title="Campaign Overview" icon={Layout} />
           <div>
             <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Product</span>
             <p style={{ margin: '0.25rem 0 0', fontWeight: '600', color: '#e2e8f0' }}>{campaign.overview.product}</p>
@@ -246,7 +452,6 @@ export default function CampaignCanvas({ data, prompt }) {
                 <img src={post.image} alt="Social" style={{ width: '100%', height: '120px', objectFit: 'cover' }} />
                 <div style={{ padding: '0.75rem' }}>
                   <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    {post.type === 'instagram' && <Instagram style={{ width: '0.9rem', height: '0.9rem', color: '#e1306c' }} />}
                     {post.type === 'tiktok' && <MessageSquare style={{ width: '0.9rem', height: '0.9rem', color: '#00f2ea' }} />}
                     {post.type === 'twitter' && <Twitter style={{ width: '0.9rem', height: '0.9rem', color: '#1da1f2' }} />}
                   </div>
@@ -254,21 +459,19 @@ export default function CampaignCanvas({ data, prompt }) {
                   <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.75rem' }}>
                     <button style={{ flex: 1, padding: '0.35rem', borderRadius: '0.4rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(148, 163, 184, 0.2)', color: '#fff', fontSize: '0.65rem', cursor: 'pointer' }}>Edit</button>
                     <button 
-                      onClick={() => handlePostToInstagram(post)}
-                      disabled={postingStatus[post.id] === 'posting'}
+                      onClick={() => handleShare(post)}
                       style={{ 
                         flex: 1, 
                         padding: '0.35rem', 
                         borderRadius: '0.4rem', 
-                        background: postingStatus[post.id] === 'success' ? 'rgba(16, 185, 129, 0.2)' : postingStatus[post.id] === 'error' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(56, 189, 248, 0.1)', 
-                        border: `1px solid ${postingStatus[post.id] === 'success' ? 'rgba(16, 185, 129, 0.3)' : postingStatus[post.id] === 'error' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(56, 189, 248, 0.2)'}`, 
-                        color: postingStatus[post.id] === 'success' ? '#10b981' : postingStatus[post.id] === 'error' ? '#ef4444' : '#38bdf8', 
+                        background: 'rgba(56, 189, 248, 0.1)', 
+                        border: '1px solid rgba(56, 189, 248, 0.2)',
+                        color: '#38bdf8', 
                         fontSize: '0.65rem', 
-                        cursor: postingStatus[post.id] === 'posting' ? 'not-allowed' : 'pointer',
-                        opacity: postingStatus[post.id] === 'posting' ? 0.6 : 1
+                        cursor: 'pointer'
                       }}
                     >
-                      {postingStatus[post.id] === 'posting' ? '...' : postingStatus[post.id] === 'success' ? '✓' : postingStatus[post.id] === 'error' ? '✗' : 'Post'}
+                      Share
                     </button>
                   </div>
                 </div>

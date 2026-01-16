@@ -3,8 +3,7 @@ import { Clock, Plus, Search, Sparkles } from 'lucide-react'
 import Navbar from './components/Navbar'
 import CompetitorInsights from './components/CompetitorInsights'
 import CampaignCanvas from './components/CampaignCanvas'
-import InstagramInsights from './components/InstagramInsights'
-import './App.css'
+import './App.css' 
 
 function App() {
   const [currentView, setCurrentView] = useState('start')
@@ -185,10 +184,10 @@ function App() {
         ) : currentView === 'canvas' ? (
           <CampaignCanvas prompt={prompt} />
         ) : currentView === 'analytics' ? (
-          <InstagramInsights />
+          <CompetitorInsights activeTab={insightsTab} onTabChange={setInsightsTab} />
         ) : (
           <CompetitorInsights activeTab={insightsTab} onTabChange={setInsightsTab} />
-        )}
+        )} 
       </main>
     </div>
   )

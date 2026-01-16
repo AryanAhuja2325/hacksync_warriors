@@ -417,14 +417,19 @@ def find_influencers(
     logger.info(f"Found {len(final_results)} relevant influencer profiles")
     
     return {
+        "influencers": final_results,  # Frontend expects this key
+        "count": len(final_results),  # Alternative naming
         "domain": domain,
         "target_audience": target_audience,
-        "influencers_count": len(final_results),
-        "influencers": final_results,
         "search_queries_used": queries[:6],
         "country": country,
         "recent_days": recent_days,
-        "platform_priorities": platform_priorities
+        "platform_priorities": platform_priorities,
+        "metadata": {
+            "total_scanned": len(unique_results),
+            "profiles_found": len(profile_results),
+            "after_relevance_filter": len(filtered_results)
+        }
     }
 
 
